@@ -297,7 +297,7 @@ void MakeGvList(List* list_p)
     FILE* gv_file = fopen("GvList.dot", "w");
     CHECKUS(gv_file != NULL, (void) 0);
 
-    fprintf(gv_file, "digraph { subgraph { rank=same \n");
+    fprintf(gv_file, "digraph {\n    fontname=\"Comic Sans MS\"\n    bgcolor=\"#" BACKGROUND_COLOR "\"\n    pad=0.4\n    node [style=rounded]\n    subgraph {\n        rank=same");
 
     for (int counter = 0; counter < list_p->capacity; counter++)
     {
@@ -367,21 +367,31 @@ void MakeGvList(List* list_p)
     {
         if (list_p->data[counter].next > 0)
         {
-            fprintf(gv_file, "\nnode_%d:<next_out> -> node_%d:<next_in>;\n", counter, list_p->data[counter].next);
+            fprintf(gv_file, "\nnode_%d:<next_out> -> node_%d:<next_in> [color=grey90, style=bold];\n", counter, list_p->data[counter].next);
         }
 
         if ((list_p->data[counter].prev >= 0) && (counter != 0))
         {
-            fprintf(gv_file, "\nnode_%d:<prev_out> -> node_%d:<prev_in>;\n", counter, list_p->data[counter].prev);
+            fprintf(gv_file, "\nnode_%d:<prev_out> -> node_%d:<prev_in> [color=grey90, style=bold];\n", counter, list_p->data[counter].prev);
         }
 
         if ((list_p->data[counter].prev == EMPTY_INDEX) && (list_p->data[counter].next == 0))
         {
-            fprintf(gv_file, "\nnode_%d:<next_out> -> node_%d:<next_in>;\n", counter, list_p->data[counter].next);
+            fprintf(gv_file, "\nnode_%d:<next_out> -> node_%d:<next_in> [color=grey90, style=bold];\n", counter, list_p->data[counter].next);
         }
     }
 
-    fprintf(gv_file, "}\n}\n");
+
+    fprintf (gv_file, "}\n");
+
+    fprintf (gv_file, "<first free element> [shape=rectangle, fontcolor = \"#" FIRST_FREE_COLOR "\", color = \"#" FIRST_FREE_COLOR
+    "\"]; <first free element> -> node_%d [color=grey90, style=bold];\n", list_p->first_free);                                // first free element
+    fprintf (gv_file, "<last free element> [shape=rectangle, fontcolor = \"#" LAST_FREE_COLOR "\", color = \"#" LAST_FREE_COLOR
+    "\"]; <last free element> -> node_%d [color=grey90, style=bold];\n", list_p->last_free);                                  // last free element
+    fprintf (gv_file, "<anchor element> [shape=rectangle, fontcolor = \"#" ANCHOR_COLOR "\", color = \"#" ANCHOR_COLOR
+    "\"]; <anchor element> -> node_%d [color=grey90, style=bold];\n", list_p->anchor_elem);                                   // anchor element
+
+    fprintf (gv_file, "}\n");
 
     fclose(gv_file);
     return;
