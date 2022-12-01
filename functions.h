@@ -31,14 +31,6 @@ typedef int Elem_t;
 #define EMPTY_COLOR      "808080"
 
 
-#define ListCtor(list_p, capacity)                      \
-{                                                       \
-    int i = ListCtor_(list_p, capacity);                \
-    if (i != 0)                                         \
-        return i;                                       \
-}
-
-
 struct ListElement
 {
     Elem_t var;
@@ -54,27 +46,35 @@ struct List
     int first_free = 0;
     int last_free = 0;
     int anchor_elem = 0;
+    int is_sorted = 0;
 };
 
 
-int ListCtor_(List* list_p, int size);
+int ListCtor(List* list_p, int capacity);
 
-int Insert(List* list_p, int position, Elem_t var);
+int FindAddress(List* list_p, int position);
+
+int InsertByAddress(List* list_p, int address, Elem_t var);
+
+int InsertByPosition(List* list_p, int position, Elem_t var);
 
 int Dump(List* list_p);
 
-int Erase(List* list_p, int position);
+int EraseByAddress(List* list_p, int address);
 
-int Copy(List* list_p, int position, Elem_t* var_p);
+int EraseByPosition(List* list_p, int position);
+
+int CopyByAddress(List* list_p, int address, Elem_t* var_p);
+
+int CopyByPosition(List* list_p, int position, Elem_t* var_p);
 
 int IncreaseCapacity(List* list_p);
 
-int DecreaseCapacity(List* list_p);
+int SortAndResize(List* list_p, int new_capacity);
 
 int ListDtor(List* list_p);
 
 void MakeGvList(List* list_p);
 
-void MakeGvList(void);
 
 #endif

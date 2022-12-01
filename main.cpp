@@ -8,13 +8,16 @@ int main ()
     List my_list = {};
     ListCtor(&my_list, 1);
 
-    Insert(&my_list, 0, 320);
-    Insert(&my_list, 0, 7400);
-    Insert(&my_list, 0, 5400);
-    Insert(&my_list, 0, 60);
+    InsertByPosition(&my_list, 0, 320);
+    InsertByPosition(&my_list, 0, 7400);
 
-    //Erase(&my_list, 0);
-    //Erase(&my_list, 2);
+    InsertByAddress(&my_list, 1, 1387);
+
+    // InsertByPosition(&my_list, 0, 5400);
+    // InsertByPosition(&my_list, 0, 60);
+
+    //EraseByPosition(&my_list, 0);
+    //EraseByPosition(&my_list, 2);
 
     //IncreaseCapacity(&my_list);
 

@@ -1,14 +1,14 @@
 #include "functions.h"
 
 
-int ListCtor_(List* list_p, int capacity)
+int ListCtor(List* list_p, int capacity)
 {
     CHECKUS(list_p != NULL, 1);
 
     if (capacity < 1)
     {
         printf(KRED Kbright "Cannot make list with capacity %i\n" KNRM, capacity);
-        return 1;
+        exit(1);
     }
     else if (capacity == 1)
     {
@@ -22,7 +22,9 @@ int ListCtor_(List* list_p, int capacity)
     list_p->size = 0;
     list_p->anchor_elem = 0;
 
-    list_p->data[0].prev = EMPTY_INDEX;
+    list_p->data[0].prev = 0;
+    list_p->data[0].next = 0;
+    list_p->data[0].var  = 0;
     for (int i = 1; i < capacity; i++)
     {
         list_p->data[i].var = 0;
@@ -34,31 +36,68 @@ int ListCtor_(List* list_p, int capacity)
     return 0;
 }
 
-int FindAdress(List* list_p, int position)
+int FindAddress(List* list_p, int position)
 {
-    if (position < 0)
+    if (list_p->size < 0)
     {
-        //printf("Only positive integers are allowed for position number\n");
-        printf("----------- FindAdress ERROR ------------\n");
-        return 1;
+        printf(KRED Kbright "FindAddress: Error, list is empty!\n" KNRM);
+        exit(1);
     }
-    if (list_p->size <= 0)
+    if (position < 0 || position > list_p->size)
     {
-        printf(KRED Kbright "FindAdress: error, list is empty!!!\n" KNRM);
-        return 1;
+        printf(KRED Kbright "FindAddress: Error, incorrect position (%i)!\n" KNRM, position);
+        exit(1);
     }
 
-    int normal_position =  position % list_p->size;
     int next_adress = list_p->anchor_elem;
 
-    for (int i = 0; i < normal_position; i++)
+    for (int i = 0; i < position; i++)
     {
         next_adress = list_p->data[next_adress].next;
     }
     return next_adress;
 }
 
-int Insert(List* list_p, int position, Elem_t var)
+int InsertByAddress(List* list_p, int address, Elem_t var)
+{
+    CHECKUS(list_p != NULL, 1);
+    CHECKUS(list_p->size >= 0, 1);
+
+    if (address < 0 || address > list_p->capacity || list_p->data[address].prev == EMPTY_INDEX)
+    {
+        printf(KRED Kbright "InsertByAddress: Error, incorrect address!\n" KNRM);
+        return 1;
+    }
+
+    int free_adress = list_p->first_free;
+    if (list_p->data[free_adress].next == 0)
+    {
+        IncreaseCapacity(list_p);
+    }
+    list_p->first_free = list_p->data[free_adress].next;
+
+    int next_adress = address;
+    int prev_adress = list_p->data[next_adress].prev;
+
+    list_p->data[free_adress].var = var;
+    list_p->data[free_adress].prev = prev_adress;
+    list_p->data[free_adress].next = next_adress;
+
+    list_p->data[prev_adress].next = free_adress;
+    list_p->data[next_adress].prev = free_adress;
+
+    if (next_adress == list_p->anchor_elem)
+    {
+        list_p->anchor_elem = free_adress;
+    }
+
+    list_p->size += 1;
+    list_p->is_sorted = 0;
+
+    return 0;
+}
+
+int InsertByPosition(List* list_p, int position, Elem_t var)
 {
     CHECKUS(list_p != NULL, 1);
     CHECKUS(list_p->size >= 0, 1);
@@ -68,48 +107,19 @@ int Insert(List* list_p, int position, Elem_t var)
         printf(KRED Kbright "Cannot insert in position %i, there are only %i elements in list\n" KNRM, position, list_p->size);
         return 1;
     }
-    else if (list_p->size == 0) // set anchor_elem to var
+
+    if (list_p->is_sorted) // position = address
     {
-        list_p->data[list_p->anchor_elem].var = var;
-        list_p->data[list_p->anchor_elem].next = list_p->anchor_elem;
-        list_p->data[list_p->anchor_elem].prev = list_p->anchor_elem;
-        list_p->size = 1;
+        InsertByAddress(list_p, position, var);
     }
     else
     {
-        int free_adress = list_p->first_free;
-        if (list_p->data[free_adress].next == 0)
-        {
-            IncreaseCapacity(list_p);
-        }
-        list_p->first_free = list_p->data[free_adress].next;
-
-        int next_adress = FindAdress(list_p, position);
-        int prev_adress = list_p->data[next_adress].prev;
-
-        list_p->data[free_adress].var = var;
-        list_p->data[free_adress].prev = prev_adress;
-        list_p->data[free_adress].next = next_adress;
-
-        list_p->data[prev_adress].next = free_adress;
-        list_p->data[next_adress].prev = free_adress;
-
-        if (position == 0)
-        {
-            list_p->anchor_elem = free_adress;
-        }
-
-        list_p->size += 1;
+        InsertByAddress(list_p, FindAddress(list_p, position), var);
     }
+
     return 0;
 }
-/*
-int PushFront(List* list_p, Elem_t var)
-{
-    CHECKUS(list_p != NULL, 1);
-    return Insert(list_p, 0, var);
-}
- */
+
 int Dump(List* list_p)
 {
     CHECKUS(list_p != NULL, 1);
@@ -117,14 +127,13 @@ int Dump(List* list_p)
     Elem_t x = 0;
     for (int i = 0; i < list_p->size; i++)
     {
-        Copy(list_p, i, &x);
+        CopyByPosition(list_p, i, &x);
         printf(ELEM_FORMAT"\n", x);
     }
 
     printf("\nSize: %i\nCapacity: %i\nFirst free element adress: %i\nLast free element adress: %i\nAnchor element adress: %i\n\n",
     list_p->size, list_p->capacity, list_p->first_free, list_p->last_free, list_p->anchor_elem);
 
-    //int cells_amount = min(list_p->capacity, list_p->size + 3);
     for (int i = 0; i < list_p->capacity; i++)
     {
         if (i == list_p->first_free)
@@ -156,7 +165,39 @@ int Dump(List* list_p)
     return 0;
 }
 
-int Erase(List* list_p, int position)
+int EraseByAddress(List* list_p, int address)
+{
+    CHECKUS(list_p != NULL, 1);
+    CHECKUS(list_p->size > 0, 1);
+
+    if (address < 0 || address > list_p->capacity || list_p->data[address].prev == EMPTY_INDEX)
+    {
+        printf(KRED Kbright "InsertByAddress: Error, incorrect address!\n" KNRM);
+        return 1;
+    }
+
+    int prev_address = list_p->data[address].prev;
+    int next_address = list_p->data[address].next;
+
+    list_p->data[address].var = 0;
+    list_p->data[address].prev = EMPTY_INDEX;
+    list_p->data[address].next = list_p->first_free;
+    list_p->first_free = address;
+
+    list_p->data[prev_address].next = next_address;
+    list_p->data[next_address].prev = prev_address;
+
+    if (address == list_p->anchor_elem)
+    {
+        list_p->anchor_elem = next_address;
+    }
+
+    list_p->size -= 1;
+    list_p->is_sorted = 0;
+    return 0;
+}
+
+int EraseByPosition(List* list_p, int position)
 {
     CHECKUS(list_p != NULL, 1);
     CHECKUS(list_p->size > 0, 1);
@@ -166,42 +207,38 @@ int Erase(List* list_p, int position)
         printf(KRED Kbright "Cannot erase in position %i, allowed positions 0 - %i\n" KNRM, position, list_p->size - 1);
         return 1;
     }
-    else if (list_p->size == 1) // set anchor_elem to 0
+
+    if (list_p->is_sorted) // position = address
     {
-        list_p->data[list_p->anchor_elem].var = 0;
-        list_p->data[list_p->anchor_elem].prev = EMPTY_INDEX;
-        list_p->size -= 1;
+        EraseByAddress(list_p, position);
     }
     else
     {
-        int adress = FindAdress(list_p, position);
-        int prev_adress = list_p->data[adress].prev;
-        int next_adress = list_p->data[adress].next;
-
-        if (position == 0)
-        {
-            list_p->anchor_elem = list_p->data[adress].next;
-        }
-
-        list_p->data[adress].var = 0;
-        list_p->data[adress].prev = EMPTY_INDEX;
-        list_p->data[adress].next = list_p->first_free;
-        list_p->first_free = adress;
-
-        list_p->data[prev_adress].next = next_adress;
-        list_p->data[next_adress].prev = prev_adress;
-
-        list_p->size -= 1;
+        EraseByAddress(list_p, FindAddress(list_p, position));
     }
+
     return 0;
 }
 
-int Copy(List* list_p, int position, Elem_t* var_p)
+int CopyByAddress(List* list_p, int address, Elem_t* var_p)
 {
     CHECKUS(list_p != NULL, 1);
 
-    int adress = FindAdress(list_p, position);
-    *var_p = list_p->data[adress].var;
+    if (list_p->data[address].prev == EMPTY_INDEX)
+    {
+        printf(KRED Kbright "Cannot copy from address %i, its empty!" KNRM, address);
+    }
+
+    *var_p = list_p->data[address].var;
+
+    return 0;
+}
+
+int CopyByPosition(List* list_p, int position, Elem_t* var_p)
+{
+    CHECKUS(list_p != NULL, 1);
+
+    CopyByAddress(list_p, FindAddress(list_p, position), var_p);
 
     return 0;
 }
@@ -234,13 +271,17 @@ int IncreaseCapacity(List* list_p)
     return 0;
 }
 
-/*
-int IncreaseCapacity(List* list_p)
+
+int SortAndResize(List* list_p, int new_capacity)
 {
     CHECKUS(list_p != NULL, 1);
-    CHECKUS(CAPACITY_COEF > 1, 1);
 
-    int new_capacity = list_p->capacity * CAPACITY_COEF;
+    if (new_capacity <= list_p->size)
+    {
+        printf(KRED Kbright "Error: Cannot resize because new capacity (%i) is smaller or equal than list size (%i)" KNRM,
+                new_capacity, list_p->size);
+    }
+
     ListElement* new_data = (ListElement*) calloc(new_capacity, sizeof(*new_data));
 
     int next_adress = list_p->anchor_elem;
@@ -254,13 +295,13 @@ int IncreaseCapacity(List* list_p)
     } while (next_adress != list_p->anchor_elem);
 
     new_data[0].prev = counter;
-    new_data[counter].next = 0;
+    new_data[counter - 1].next = 0;
 
     for (int i = counter; i < new_capacity; i++)
     {
-        new_data[counter].var = 0;
-        new_data[counter].prev = EMPTY_INDEX;
-        new_data[counter].next = i + 1;
+        new_data[i].var = 0;
+        new_data[i].prev = EMPTY_INDEX;
+        new_data[i].next = i + 1;
     }
     new_data[new_capacity - 1].next = 0;
 
@@ -270,16 +311,11 @@ int IncreaseCapacity(List* list_p)
 
     free(list_p->data);
     list_p->data = new_data;
-
-    return 0;
-} */
-
-int DecreaseCapacity(List* list_p)
-{
-    CHECKUS(list_p != NULL, 1);
+    list_p->is_sorted = 1;
 
     return 0;
 }
+
 
 int ListDtor(List* list_p)
 {
@@ -397,7 +433,3 @@ void MakeGvList(List* list_p)
     return;
 }
 
-void MakeGvList(void)
-{
-    system("dot -Tpng GvList.dot -o GvList.png");
-}
